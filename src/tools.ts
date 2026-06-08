@@ -133,7 +133,7 @@ export function registerTools(
   server.tool(
     "import_transactions_csv",
     "Import transactions from CSV (Koinly, CoinTracker, exchange). Deduplicates and validates.",
-    ImportTransactionsCsvSchema,
+    ImportTransactionsCsvSchema.shape,
     { destructiveHint: true, title: "Import Transactions" },
     async (args) => {
       const text = Buffer.from(args.csv_data, "base64").toString("utf-8");
@@ -234,7 +234,7 @@ export function registerTools(
   server.tool(
     "calculate_cost_basis",
     "Calculate cost basis using FIFO/LIFO/HIFO. Detects errors (missing cost basis, negative balance).",
-    CalculateCostBasisSchema,
+    CalculateCostBasisSchema.shape,
     { readOnlyHint: true, title: "Calculate Cost Basis" },
     async (args) => {
       const txs = args.transactions.map((t): Transaction => ({
@@ -286,7 +286,7 @@ export function registerTools(
   server.tool(
     "reconcile_with_1099da",
     "Compare calculated cost basis against Form 1099-DA. Detect mismatches (cost basis discrepancies, missing transactions).",
-    ReconcileForm1099Schema,
+    ReconcileForm1099Schema.shape,
     { readOnlyHint: true, title: "Reconcile with 1099-DA" },
     async (args) => {
       const calculated = args.calculated_basis;
@@ -324,7 +324,7 @@ export function registerTools(
   server.tool(
     "optimize_cost_basis_method",
     "Compare tax impact of FIFO vs LIFO vs HIFO. Show which method minimizes tax liability.",
-    OptimizeCostBasisSchema,
+    OptimizeCostBasisSchema.shape,
     { readOnlyHint: true, title: "Optimize Cost Basis Method" },
     async (args) => {
       const methods = args.include_methods || ["fifo", "lifo", "hifo"];
@@ -365,7 +365,7 @@ export function registerTools(
   server.tool(
     "detect_errors_and_explain",
     "Detect common crypto tax errors: negative balance, missing cost basis, bridge transfer mismatches. Returns root cause + remediation.",
-    DetectErrorsSchema,
+    DetectErrorsSchema.shape,
     { readOnlyHint: true, title: "Detect Errors and Explain" },
     async (args) => {
       const txs = args.transactions.map((t): Transaction => ({
@@ -411,7 +411,7 @@ export function registerTools(
   server.tool(
     "generate_tax_report",
     "Generate tax report in JSON/CSV/PDF format. Includes cost basis, realized gains, short/long-term split, audit trail.",
-    GenerateTaxReportSchema,
+    GenerateTaxReportSchema.shape,
     { readOnlyHint: true, title: "Generate Tax Report" },
     async (args) => {
       const gains = getGainsByUser(userId);
@@ -452,7 +452,7 @@ export function registerTools(
   server.tool(
     "compare_1099da",
     "Reconcile a broker Form 1099-DA against your own calculated cost basis for one exchange + tax year. Brokers report proceeds but often $0 basis (they can't see assets acquired elsewhere), overstating your gain. Returns your actual gain, the discrepancy, a plain-language explanation, audit risk, and a filing recommendation. Requires Tax tier. Run calculate_cost_basis first so gains are stored.",
-    Compare1099daSchema,
+    Compare1099daSchema.shape,
     { readOnlyHint: true, title: "Compare with 1099-DA" },
     async (args) => {
       if (tier !== "tax") {
@@ -492,7 +492,7 @@ export function registerTools(
   server.tool(
     "add_manual_transaction",
     "Add a single crypto transaction — buy, sell, transfer, airdrop, or earn income. If price_usd is omitted for taxable events (buy/sell/earn/airdrop), the historical USD price is fetched automatically from CoinGecko. Deduplication prevents double-entry. Free tier: max 50 transactions.",
-    AddManualTransactionSchema,
+    AddManualTransactionSchema.shape,
     { destructiveHint: true, title: "Add Manual Transaction" },
     async (args) => {
       if (tier === "free" && countTxsByUser(userId) >= 50) {
@@ -581,7 +581,7 @@ export function registerTools(
   server.tool(
     "get_transactions",
     "Browse stored transactions. Filter by year, event type, coin, or exchange. Returns newest first. Use limit/offset to paginate.",
-    GetTransactionsSchema,
+    GetTransactionsSchema.shape,
     { readOnlyHint: true, title: "Get Transactions" },
     (args) => {
       const txs = getTxsByUser(userId, {
@@ -623,7 +623,7 @@ export function registerTools(
   server.tool(
     "get_realized_gains",
     "Summarize realized capital gains for a tax year. Returns short-term/long-term split, per-coin breakdown, and totals. Run calculate_cost_basis first to populate the gains store.",
-    GetRealizedGainsSchema,
+    GetRealizedGainsSchema.shape,
     { readOnlyHint: true, title: "Get Realized Gains" },
     (args) => {
       const method = args.method ?? "fifo";
