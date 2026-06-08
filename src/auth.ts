@@ -20,6 +20,29 @@ export interface AuthDeps {
 const ALLOWED_TIERS = new Set(["free", "pro", "tax"]);
 
 /**
+ * JSON-RPC methods used by directory probes (MCPize, Claude, etc.) to enumerate
+ * the server's capabilities. These don't act on user data, so they're allowed
+ * through without per-user auth — otherwise the directory's "discovery" call
+ * fails and the listing shows "version: unknown" / no tools.
+ * Tool execution (`tools/call`) still requires real auth.
+ */
+const DISCOVERY_METHODS = new Set([
+  "initialize",
+  "notifications/initialized",
+  "tools/list",
+  "prompts/list",
+  "resources/list",
+  "resources/templates/list",
+  "ping",
+]);
+
+function isDiscoveryRequest(body: unknown): boolean {
+  if (!body || typeof body !== "object") return false;
+  const method = (body as { method?: unknown }).method;
+  return typeof method === "string" && DISCOVERY_METHODS.has(method);
+}
+
+/**
  * Build a Bearer-API-key auth middleware. Two paths:
  *  1. MCPize proxy: Authorization matches the upstream master token →
  *     derive userId from X-MCPize-Customer-Id; tier from X-MCPize-Tier.
@@ -33,6 +56,15 @@ export function createAuthMiddleware({
   upstreamToken,
 }: AuthDeps): RequestHandler {
   return function authMiddleware(req: Request, res: Response, next: NextFunction): void {
+    // Allow capability-discovery probes without auth so directory listings
+    // (MCPize, Claude, etc.) can enumerate tools/prompts/resources.
+    if (isDiscoveryRequest(req.body)) {
+      (req as AuthedRequest).userId = "discovery";
+      (req as AuthedRequest).tier = "free";
+      next();
+      return;
+    }
+
     const raw = req.headers.authorization?.replace(/^Bearer\s+/i, "");
     if (!raw) {
       res.status(401).json({ error: "Missing Authorization header" });
