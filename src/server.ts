@@ -22,7 +22,11 @@ app.use(
 // Ensure polar_subscriptions table exists (idempotent)
 initPolarSchema();
 
-const authMiddleware = createAuthMiddleware({ validateKey, getUserId });
+const authMiddleware = createAuthMiddleware({
+  validateKey,
+  getUserId,
+  upstreamToken: process.env.MCPIZE_UPSTREAM_TOKEN,
+});
 
 app.post("/mcp", authMiddleware, async (req, res) => {
   const { userId, tier } = req as AuthedRequest;
